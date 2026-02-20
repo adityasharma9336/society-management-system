@@ -1,0 +1,14 @@
+{
+  "name": "society-management",
+  "version": "1.0.0",
+  "description": "Full Stack Society Management System",
+  "scripts": {
+    "start": "echo \"Use 'npm run dev' to start development servers\"",
+    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "author": "",
+  "license": "ISC"
+}
