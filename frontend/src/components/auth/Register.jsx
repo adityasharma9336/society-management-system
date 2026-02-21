@@ -8,10 +8,7 @@ export default function Register() {
     const { register, handleSubmit, formState: { errors }, watch } = useForm();
     const password = watch("password");
 
-    const onSubmit = (data) => {
-        console.log(data);
-        toast.info("Registration logic not implemented yet!");
-    };
+
 // updated auth component
 
     return (
