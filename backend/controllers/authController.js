@@ -93,6 +93,8 @@ const getUserProfile = async (req, res) => {
                 block: user.block,
                 flatNo: user.flatNo,
                 profilePicture: user.profilePicture,
+                familyMembers: user.familyMembers,
+                vehicles: user.vehicles,
             });
         } else {
             res.status(404);
@@ -168,6 +170,14 @@ const updateUserProfile = async (req, res) => {
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
             user.profilePicture = req.body.profilePicture || user.profilePicture;
+
+            if (req.body.familyMembers) {
+                user.familyMembers = req.body.familyMembers;
+            }
+            if (req.body.vehicles) {
+                user.vehicles = req.body.vehicles;
+            }
+
             if (req.body.password) {
                 user.password = req.body.password;
             }
@@ -182,6 +192,8 @@ const updateUserProfile = async (req, res) => {
                 block: updatedUser.block,
                 flatNo: updatedUser.flatNo,
                 profilePicture: updatedUser.profilePicture,
+                familyMembers: updatedUser.familyMembers,
+                vehicles: updatedUser.vehicles,
                 token: generateToken(updatedUser._id),
             });
         } else {

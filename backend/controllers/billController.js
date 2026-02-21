@@ -78,28 +78,4 @@ const payBill = async (req, res) => {
     }
 };
 
-// @desc    Get billing statistics
-// @route   GET /api/bills/stats
-// @access  Private/Admin
-const getBillingStats = async (req, res) => {
-    try {
-        const bills = await Bill.find({});
-
-        const totalCollected = bills
-            .filter(b => b.status === 'paid')
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-        const outstandingDues = bills
-            .filter(b => b.status === 'pending' || b.status === 'overdue')
-            .reduce((acc, curr) => acc + curr.amount, 0);
-
-        // For "Pending Approvals" we will just return a mock value for now, or count bills that need manual verification if applicable.
-        const pendingApprovals = 0;
-
-        res.json({ totalCollected, outstandingDues, pendingApprovals });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-module.exports = { getMyBills, getBills, createBill, payBill, getBillingStats };
+module.exports = { getMyBills, getBills, createBill, payBill };
