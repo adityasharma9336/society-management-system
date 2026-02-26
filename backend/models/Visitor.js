@@ -13,11 +13,11 @@ const visitorSchema = mongoose.Schema(
         },
         phone: {
             type: String,
-            required: true,
+            required: false,
         },
         type: {
             type: String,
-            enum: ['Personal Guest', 'Delivery Partner', 'Home Service', 'Daily Help', 'Other'],
+            enum: ['Personal Guest', 'Delivery Partner', 'Home Service', 'Daily Help', 'Worker', 'Other'],
             default: 'Personal Guest'
         },
         expectedDate: {
@@ -26,8 +26,8 @@ const visitorSchema = mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['expected', 'checked_in', 'checked_out', 'denied'],
-            default: 'expected'
+            enum: ['pending', 'approved', 'expected', 'checked_in', 'checked_out', 'denied'],
+            default: 'pending'
         },
         purpose: { // Keep for backward compatibility if needed, or remove if not in UI
             type: String,

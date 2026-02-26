@@ -15,14 +15,15 @@ const addVisitor = async (req, res) => {
             name,
             phone,
             purpose,
-            status: status || 'expected',
+            status: status || (req.user.role === 'admin' ? 'approved' : 'pending'),
             type: type || 'Personal Guest',
             expectedDate: expectedDate || Date.now(),
             passCode
         });
 
         const createdVisitor = await visitor.save();
-        res.status(201).json(createdVisitor);
+        const populatedVisitor = await Visitor.findById(createdVisitor._id).populate('resident', 'name block flatNo');
+        res.status(201).json(populatedVisitor);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -97,11 +98,32 @@ const getMyVisitors = async (req, res) => {
 // @access  Private/Admin
 const getAllVisitors = async (req, res) => {
     try {
-        const visitors = await Visitor.find({}).populate('resident', 'name block flatNo');
+        const visitors = await Visitor.find({}).populate('resident', 'name block flatNo').sort('-createdAt');
         res.json(visitors);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-module.exports = { addVisitor, getVisitorStats, exitVisitor, getMyVisitors, getAllVisitors };
+// @desc    Update visitor status (Admin)
+// @route   PUT /api/visitors/:id/status
+// @access  Private/Admin
+const updateVisitorStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const visitor = await Visitor.findById(req.params.id);
+
+        if (visitor) {
+            visitor.status = status;
+            await visitor.save();
+            const updatedVisitor = await Visitor.findById(visitor._id).populate('resident', 'name block flatNo');
+            res.json(updatedVisitor);
+        } else {
+            res.status(404).json({ message: 'Visitor not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { addVisitor, getVisitorStats, exitVisitor, getMyVisitors, getAllVisitors, updateVisitorStatus };

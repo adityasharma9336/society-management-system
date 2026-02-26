@@ -17,17 +17,17 @@ const noticeSchema = mongoose.Schema(
         },
         category: {
             type: String,
-            enum: ['security', 'maintenance', 'event', 'other'],
+            enum: ['general', 'maintenance', 'event', 'emergency', 'security', 'other'],
             default: 'other',
         },
         type: {
             type: String,
-            enum: ['notice', 'alert', 'meeting', 'circular'],
+            enum: ['notice', 'alert', 'meeting', 'circular', 'announcement'],
             default: 'notice',
         },
         priority: {
             type: String,
-            enum: ['normal', 'high'],
+            enum: ['low', 'normal', 'medium', 'high', 'urgent'],
             default: 'normal',
         },
         eventDetails: {

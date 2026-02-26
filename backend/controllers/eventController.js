@@ -5,7 +5,9 @@ const Event = require('../models/Event');
 // @access  Private
 const getEvents = async (req, res) => {
     try {
-        const events = await Event.find({}).sort('date');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const events = await Event.find({ date: { $gte: today } }).sort('date');
         res.json(events);
     } catch (error) {
         res.status(500).json({ message: error.message });

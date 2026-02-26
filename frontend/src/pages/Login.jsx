@@ -58,14 +58,14 @@ export default function Login() {
                             <h1 className="text-3xl font-extrabold tracking-tight">SocietyManager</h1>
                         </div>
                         <h2 className="text-4xl font-bold leading-tight mb-4">Smart living for modern communities.</h2>
-                        <p className="text-lg text-white/90 max-w-md">Join over 5,000 societies managing their facilities, security, and finances seamlessly.</p>
+                        {/* <p className="text-lg text-white/90 max-w-md">Join over 5,000 societies managing their facilities, security, and finances seamlessly.</p> */}
                         <div className="mt-8 flex gap-4">
                             <div className="flex -space-x-2">
                                 <img className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User avatar 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkTDyCvalPrZjDcWTJ24vaFiwj4FvS8D7EzCfipAKHtVaOhJkAYfbFpTOOkASMY_QrbRCHnwl4zZ2MA5y8uWHaX76Zfe6Z5W0DEt_vuF5o2NCZfZsPx3TKubvcMZM05sOAR7TBtD4t3ApQ5l6JW_aypeaeHzFew-CnYQosUAiCuZB1kiW5m1vYmMiO9mM9Mcr2xKd9BFJ8bMbQRLXwnxWPYI-G6YVuGxk9pUi6oVVPuqoDjStPLdj9f0br2bvtPlbLvsUTUVoyigw" />
                                 <img className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User avatar 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuhfEnTKB45eXK6xsn7UC_jm_-RtbfZHOHJbrcAYryWHsikz_GnLYgxAJLgpHTkKzUNjvo8IzWXkElZfUt_kifMkkK5oq57Iw10OsdvbTwVM4SvXIRkCXI18mglzhZSmpK7ixtnUr0f_ynzHV6pq547QLOwtTD-5avOFDYev9NjJrBbHlx5171xBskZJ5HxjzK7-q0EvyGjzU5t3f_NrGpHD2FZLU1w1DSURWps025M8Kc71P93BqNCR61ebp6PG7WHpy5knykZH0" />
                                 <img className="w-10 h-10 rounded-full border-2 border-white object-cover" alt="User avatar 3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlzgukYDPECfbgLf-_F63wr_XEDS1KuS8WLtEMCcKt9Jkov7mXSbhvWJbpjhAKl1etVXmJYEmVm6CM0mxeJBVMzmsVigHc95s5L8Zms7QUdF90EQ1khYkI07jEDL2ISUajFcU6c32NiMbciU9iue2QfxOfPavDhppQlNtBnnWJO5ktgPag7020tZJkGqLAHuQjDuJrKU8StT6JymifwJQvNVRAW9m-YE25Eu7xGtihXgRWT_xWvtTl9C8VJAai1mpqpDi4H4-Yai0" />
                             </div>
-                            <p className="text-sm self-center">Trusted by 50k+ residents</p>
+                            <p className="text-sm self-center">Trusted by 100+ residents</p>
                         </div>
                     </div>
                 </div>
@@ -148,11 +148,7 @@ export default function Login() {
                             </div>
                         </div>
 
-                        {/* Remember Me */}
-                        <div className="flex items-center gap-2">
-                            <input className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary bg-white dark:bg-slate-900" id="remember" type="checkbox" />
-                            <label className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none font-medium" htmlFor="remember">Remember me for 30 days</label>
-                        </div>
+
 
                         {/* Login Button */}
                         <button
@@ -162,29 +158,8 @@ export default function Login() {
                         >
                             {loading ? 'Logging in...' : 'Log In'}
                         </button>
-
-                        {/* Divider */}
-                        <div className="relative py-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 font-medium">Or continue with</span>
-                            </div>
-                        </div>
-
-                        {/* Social Logins */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <button className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold text-sm text-slate-700 dark:text-slate-300" type="button">
-                                <img alt="Google" className="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwqHperpFwvn-hmEdltIfoY-HeNx6UWca3I7v7u2qR7Q7OZXeTqTFZfMw_-Yb4qkWEWjnPiwt22PdUXEWW5tgpFzNrfsy2yQakDhr1r6xhIkIu_LMnv1bOBMh8M20D2nayob6UdqgrGXJtF0TjhnX2qVEhTh9SLfqtzGf3_ot0UoC1jwb2Vp7OiupD_-rxWf3tlWCNxIuRrWRaHSjQakgQhEmy2rGfg7omtJXLVn-Gg71deo0kE2DTtx0O5VgS9QInYv7OjdNSCRU" />
-                                Google
-                            </button>
-                            <button className="flex items-center justify-center gap-2 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-semibold text-sm text-slate-700 dark:text-slate-300" type="button">
-                                <img alt="LinkedIn" className="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtdDd8B6nqE_9zsfLeTYOiCYc2cSla6B5w_fnhnjKKsjvGKZel36LpBl-yNACxA_QORGIyr2f2CHpvkrpuHNts1Gq_MGcBZXhFJw86G_1_k7L0SHyeTILqUY8OaPBMpOM-rOjN_6ZoNs6ZUS-ddG16N6tGu3rt-rqpOkIhZs40rbqSJkXp2W9OwP_EwPgrxmNIFNi4FfqyYL5rj-c28ojU3L2k7956oLYGCnXRfle_maSRc_Cbr4pBhJStFE0s_WDSDdK7FhkvnGg" />
-                                LinkedIn
-                            </button>
-                        </div>
                     </form>
+
 
                     {/* Footer Link */}
                     <div className="mt-12 text-center">

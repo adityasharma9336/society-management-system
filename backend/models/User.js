@@ -12,14 +12,18 @@ const userSchema = mongoose.Schema(
             required: true,
             unique: true,
         },
+        phone: {
+            type: String,
+        },
         password: {
             type: String,
             required: true,
         },
+
         role: {
             type: String,
-            enum: ['admin', 'resident'],
-            default: 'resident',
+            enum: ['admin', 'resident', 'member', 'guard'],
+            default: 'member',
         },
         block: {
             type: String, // e.g., 'A', 'B'
@@ -31,6 +35,20 @@ const userSchema = mongoose.Schema(
             type: String,
             default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
         },
+        familyMembers: [
+            {
+                name: String,
+                relation: String,
+                age: Number,
+            },
+        ],
+        vehicles: [
+            {
+                type: { type: String, enum: ['2 Wheeler', '4 Wheeler'] },
+                number: String,
+                make: String,
+            },
+        ],
     },
     {
         timestamps: true,

@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const AuditLog = require('../models/AuditLog');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -18,6 +19,14 @@ const authUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await user.matchPassword(password))) {
+            // Log Login
+            await AuditLog.create({
+                user: user._id,
+                action: 'USER_LOGIN',
+                details: `${user.name} logged in`,
+                ipAddress: req.ip
+            });
+
             res.json({
                 _id: user._id,
                 name: user.name,
@@ -42,7 +51,7 @@ const authUser = async (req, res) => {
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, block, flatNo } = req.body;
+        const { name, email, phone, password, role, block, flatNo, profilePicture } = req.body;
 
         const userExists = await User.findOne({ email });
 
@@ -54,13 +63,23 @@ const registerUser = async (req, res) => {
         const user = await User.create({
             name,
             email,
+            phone,
             password,
             role,
             block,
             flatNo,
+            profilePicture
         });
 
         if (user) {
+            // Log Registration
+            await AuditLog.create({
+                user: user._id,
+                action: 'USER_REGISTER',
+                details: `New user registered: ${user.name} (${user.role})`,
+                ipAddress: req.ip
+            });
+
             res.status(201).json({
                 _id: user._id,
                 name: user.name,
@@ -169,6 +188,7 @@ const updateUserProfile = async (req, res) => {
         if (user) {
             user.name = req.body.name || user.name;
             user.email = req.body.email || user.email;
+            user.phone = req.body.phone || user.phone;
             user.profilePicture = req.body.profilePicture || user.profilePicture;
 
             if (req.body.familyMembers) {

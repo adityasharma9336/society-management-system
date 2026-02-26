@@ -2,23 +2,74 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getNotices } from '../services/dataService';
 import AdminComplaintModule from '../components/admin/AdminComplaintModule';
 import AdminBillingModule from '../components/admin/AdminBillingModule';
 import AdminVisitorModule from '../components/admin/AdminVisitorModule';
+import AdminOverviewModule from '../components/admin/AdminOverviewModule';
+import AdminNoticeModule from '../components/admin/AdminNoticeModule';
+import AdminResidentModule from '../components/admin/AdminResidentModule';
+import { io } from 'socket.io-client';
+import { toast } from 'react-toastify';
+import { getAdminDashboardStats } from '../services/dataService';
 
 export default function AdminDashboard() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('visitors');
+    const [activeTab, setActiveTab] = useState('dashboard');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [dashboardLoading, setDashboardLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const notices = await getNotices({ limit: 5 });
+                setNotifications(notices || []);
+            } catch (error) {
+                console.error("Failed to fetch notifications:", error);
+            }
+        };
+
+        const fetchInitialDashboardData = async () => {
+            try {
+                const data = await getAdminDashboardStats();
+                setDashboardStats(data);
+                setDashboardLoading(false);
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats:", error);
+                setDashboardLoading(false);
+            }
+        };
+
+        fetchNotifications();
+        fetchInitialDashboardData();
+
+        // Socket.IO Listener
+        const socket = io(window.location.hostname === 'localhost' ? 'http://localhost:5001' : '/');
+        if (socket) {
+            socket.on('new_notification', (newNotif) => {
+                setNotifications(prev => [newNotif, ...prev].slice(0, 5));
+                toast.info(`New Notification: ${newNotif.title}`);
+            });
+        }
+
+        return () => {
+            if (socket) {
+                socket.off('new_notification');
+            }
+        };
+    }, []);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    // Placeholder for other tabs
+   
     const renderPlaceholder = (title) => (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center h-full">
             <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600 mb-4">construction</span>
@@ -30,12 +81,11 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen w-full bg-slate-50 dark:bg-[#101922] text-slate-900 dark:text-slate-100 font-sans flex flex-col custom-scrollbar">
 
-            {/* Top Navbar */}
             <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-[#1a2632]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
 
-                        {/* Logo Area */}
+                      
                         <div className="flex items-center gap-2 shrink-0">
                             <div className="text-primary">
                                 <span className="material-symbols-outlined text-3xl">security</span>
@@ -43,7 +93,6 @@ export default function AdminDashboard() {
                             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">Admin Panel</h1>
                         </div>
 
-                        {/* Desktop Navigation */}
                         <nav className="hidden md:flex gap-1 md:gap-2">
                             {[
                                 { id: 'dashboard', label: 'Overview' },
@@ -68,10 +117,53 @@ export default function AdminDashboard() {
 
                         {/* User Actions & Mobile Menu Toggle */}
                         <div className="flex items-center gap-3">
-                            <button className="relative p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors hidden sm:block bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-[20px]">notifications</span>
-                                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsNotifOpen(!isNotifOpen)}
+                                    className="relative p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors hidden sm:block bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">notifications</span>
+                                    {notifications.length > 0 && (
+                                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                                    )}
+                                </button>
+
+                                <AnimatePresence>
+                                    {isNotifOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 10 }}
+                                            className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50 overflow-hidden"
+                                        >
+                                            <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                                                <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+                                                <span onClick={() => { setActiveTab('notices'); setIsNotifOpen(false); }} className="text-xs font-bold text-primary cursor-pointer hover:underline">View All</span>
+                                            </div>
+                                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                {notifications.length > 0 ? notifications.map(notif => (
+                                                    <div
+                                                        key={notif._id}
+                                                        onClick={() => { setActiveTab('notices'); setIsNotifOpen(false); }}
+                                                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-50 dark:border-slate-700/50 last:border-0 transition-colors"
+                                                    >
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1">{notif.title}</p>
+                                                            <span className="shrink-0 text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{new Date(notif.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{notif.content}</p>
+                                                    </div>
+                                                )) : (
+                                                    <div className="px-4 py-8 text-center flex flex-col items-center justify-center">
+                                                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2">notifications_off</span>
+                                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No new notifications</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
                             <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
 
@@ -164,10 +256,31 @@ export default function AdminDashboard() {
                         transition={{ duration: 0.2 }}
                         className="flex-1 flex flex-col h-full overflow-hidden"
                     >
-                        {activeTab === 'dashboard' && renderPlaceholder('Dashboard')}
-                        {activeTab === 'residents' && renderPlaceholder('Residents')}
-                        {activeTab === 'notices' && renderPlaceholder('Notices')}
+                        {activeTab === 'dashboard' && (
+                            <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 custom-scrollbar">
+                                <AdminOverviewModule
+                                    setActiveTab={setActiveTab}
+                                    stats={dashboardStats}
+                                    loading={dashboardLoading}
+                                    refreshStats={async () => {
+                                        const data = await getAdminDashboardStats();
+                                        setDashboardStats(data);
+                                    }}
+                                />
+                            </div>
+                        )}
+                        {activeTab === 'residents' && (
+                            <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 custom-scrollbar">
+                                <AdminResidentModule />
+                            </div>
+                        )}
                         {activeTab === 'settings' && renderPlaceholder('Settings')}
+
+                        {activeTab === 'notices' && (
+                            <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 custom-scrollbar">
+                                <AdminNoticeModule />
+                            </div>
+                        )}
 
                         {activeTab === 'complaints' && (
                             <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 custom-scrollbar">

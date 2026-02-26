@@ -1,7 +1,8 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getNotices, getEvents, getMyBills, getMyComplaints, getMyVisitors, getPolls } from '../services/dataService';
 import ResidentBilling from './ResidentBilling';
 import ResidentComplaints from './ResidentComplaints';
 import ResidentUnit from './ResidentUnit';
@@ -14,6 +15,57 @@ export default function MemberDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [events, setEvents] = useState([]);
+    const [bills, setBills] = useState([]);
+    const [complaints, setComplaints] = useState([]);
+    const [visitors, setVisitors] = useState([]);
+    const [polls, setPolls] = useState([]);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const [noticesData, eventsData, billsData, complaintsData, visitorsData, pollsData] = await Promise.all([
+                    getNotices({ limit: 5 }),
+                    getEvents(),
+                    getMyBills(),
+                    getMyComplaints(),
+                    getMyVisitors(),
+                    getPolls()
+                ]);
+                setNotifications(noticesData || []);
+
+                // Merge real events and event notices
+                const eventNotices = (noticesData || [])
+                    .filter(n => n.category === 'event' && n.eventDetails?.date)
+                    .map(n => ({
+                        _id: n._id,
+                        title: n.title,
+                        date: n.eventDetails.date,
+                        location: n.eventDetails.location,
+                        time: n.eventDetails.time,
+                        isNotice: true
+                    }));
+
+                const allEvents = [...(Array.isArray(eventsData) ? eventsData : []), ...eventNotices]
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                setEvents(allEvents);
+                setBills(Array.isArray(billsData) ? billsData : []);
+                setComplaints(Array.isArray(complaintsData) ? complaintsData : []);
+                setVisitors(Array.isArray(visitorsData) ? visitorsData : []);
+                setPolls(Array.isArray(pollsData) ? pollsData : []);
+            } catch (error) {
+                console.error("Failed to fetch dashboard data:", error);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+    const pendingBills = bills.filter(b => b.status === 'pending' || b.status === 'overdue');
+    const totalDue = pendingBills.reduce((sum, b) => sum + (b.amount - (b.amountPaid || 0)), 0);
+    const earliestDueDate = pendingBills.length > 0 ? new Date(Math.min(...pendingBills.map(b => new Date(b.dueDate)))) : null;
 
     const handleLogout = () => {
         logout();
@@ -45,49 +97,63 @@ export default function MemberDashboard() {
                 {/* Quick Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Bill Due Widget */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                        <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center shrink-0">
+                    <div onClick={() => setActiveTab('billing')} className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4 cursor-pointer hover:border-red-200 dark:hover:border-red-900/50 transition-colors group">
+                        <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-2xl">receipt_long</span>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Due Amount</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">$150.00</h3>
-                            <p className="text-xs font-semibold text-red-500 mt-1">Due in 5 days</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">₹{totalDue.toFixed(2)}</h3>
+                            {earliestDueDate ? (
+                                <p className={`text-xs font-semibold mt-1 ${earliestDueDate < new Date() ? 'text-red-500' : 'text-amber-500'}`}>
+                                    {earliestDueDate < new Date() ? 'Overdue' : `Due by ${earliestDueDate.toLocaleDateString()}`}
+                                </p>
+                            ) : (
+                                <p className="text-xs font-semibold text-green-500 mt-1">All clear</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Active Complaints */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center shrink-0">
+                    <div onClick={() => setActiveTab('complaints')} className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4 cursor-pointer hover:border-amber-200 dark:hover:border-amber-900/50 transition-colors group">
+                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-2xl">build</span>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Open Requests</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">2</h3>
-                            <p className="text-xs font-medium text-slate-400 mt-1">Plumbing, Electrical</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {complaints.filter(c => c.status === 'open' || c.status === 'in-progress').length}
+                            </h3>
+                            <p className="text-xs font-medium text-slate-400 mt-1 line-clamp-1">
+                                {complaints.filter(c => c.status === 'open' || c.status === 'in-progress').map(c => c.type).join(', ') || 'No active requests'}
+                            </p>
                         </div>
                     </div>
 
                     {/* Pre-approved Visitors */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                        <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center shrink-0">
+                    <div onClick={() => setActiveTab('visitors')} className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4 cursor-pointer hover:border-green-200 dark:hover:border-green-900/50 transition-colors group">
+                        <div className="w-12 h-12 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-2xl">how_to_reg</span>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Expected Visitors</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">1</h3>
-                            <button className="text-xs font-bold text-primary hover:underline mt-1">Pre-approve New</button>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {visitors.filter(v => v.status === 'expected').length}
+                            </h3>
+                            <button className="text-xs font-bold text-primary hover:underline mt-1">Manage Visitors</button>
                         </div>
                     </div>
 
                     {/* Community Polls */}
-                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center shrink-0">
+                    <div onClick={() => setActiveTab('community')} className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-4 cursor-pointer hover:border-blue-200 dark:hover:border-blue-900/50 transition-colors group">
+                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                             <span className="material-symbols-outlined text-2xl">poll</span>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Active Polls</p>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">1</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                {polls.filter(p => p.status === 'active').length}
+                            </h3>
                             <button className="text-xs font-bold text-primary hover:underline mt-1">Vote Now</button>
                         </div>
                     </div>
@@ -107,24 +173,38 @@ export default function MemberDashboard() {
                                 <button className="text-sm font-semibold text-primary hover:text-blue-700 transition-colors">View All</button>
                             </div>
                             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {/* Notice Item */}
-                                <div className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-slate-900 dark:text-white">Annual General Meeting 2026</h4>
-                                        <span className="text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 px-2 py-1 rounded">Important</span>
+                                {notifications.length === 0 ? (
+                                    <div className="p-8 text-center text-slate-500">
+                                        <span className="material-symbols-outlined text-4xl mb-2 text-slate-300 dark:text-slate-600">inbox</span>
+                                        <p>No new notices at this time.</p>
                                     </div>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">Dear Residents, the AGM for this year will be held on the 10th of next month in the clubhouse. All owners are requested to attend to discuss the budget and new amenities.</p>
-                                    <p className="text-xs text-slate-400 mt-3 font-medium">Posted by Admin • 2 hours ago</p>
-                                </div>
-                                {/* Notice Item */}
-                                <div className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-slate-900 dark:text-white">Water Supply Disruption</h4>
-                                        <span className="text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-2 py-1 rounded">Maintenance</span>
-                                    </div>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">Water supply will be temporarily paused between 2 PM and 4 PM tomorrow due to routine cleaning of the overhead tanks.</p>
-                                    <p className="text-xs text-slate-400 mt-3 font-medium">Posted by Facility Manager • 1 day ago</p>
-                                </div>
+                                ) : (
+                                    notifications.slice(0, 3).map(notice => {
+                                        const noticeDate = new Date(notice.createdAt || Date.now());
+                                        // Calculate relative time roughly
+                                        const diff = Math.round((Date.now() - noticeDate) / (1000 * 60 * 60 * 24));
+                                        const timeAgo = diff === 0 ? 'Today' : diff === 1 ? '1 day ago' : `${diff} days ago`;
+
+                                        return (
+                                            <div key={notice._id || notice.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">{notice.title}</h4>
+                                                    <span className={`text-xs font-medium px-2 py-1 rounded capitalize shrink-0 ml-2
+                                                        ${notice.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                                                            : notice.priority === 'urgent' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                                                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'}`}>
+                                                        {notice.priority || 'Normal'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{notice.content}</p>
+                                                <p className="text-xs text-slate-400 mt-3 font-medium flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[14px]">account_circle</span>
+                                                    Posted by {notice.author?.name || 'Admin'} • {timeAgo}
+                                                </p>
+                                            </div>
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     </div>
@@ -140,26 +220,27 @@ export default function MemberDashboard() {
                                 </h3>
                             </div>
                             <div className="p-5 flex flex-col gap-4">
-                                <div className="flex gap-4 items-start">
-                                    <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 text-center min-w-[50px] border border-slate-200 dark:border-slate-700">
-                                        <p className="text-xs font-bold text-primary uppercase">Oct</p>
-                                        <p className="text-xl font-extrabold text-slate-900 dark:text-white -mt-1">24</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">Diwali Celebration</h4>
-                                        <p className="text-xs text-slate-500 mt-1">Clubhouse • 6:00 PM</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4 items-start">
-                                    <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 text-center min-w-[50px] border border-slate-200 dark:border-slate-700">
-                                        <p className="text-xs font-bold text-primary uppercase">Nov</p>
-                                        <p className="text-xl font-extrabold text-slate-900 dark:text-white -mt-1">05</p>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">Sunday Yoga Session</h4>
-                                        <p className="text-xs text-slate-500 mt-1">Central Park • 7:00 AM</p>
-                                    </div>
-                                </div>
+                                {events.length === 0 ? (
+                                    <p className="text-sm text-center text-slate-500 py-4">No upcoming events right now.</p>
+                                ) : (
+                                    events.slice(0, 3).map(event => {
+                                        const eventDate = new Date(event.date);
+                                        const month = eventDate.toLocaleString('default', { month: 'short' });
+                                        const day = eventDate.getDate();
+                                        return (
+                                            <div key={event._id} className="flex gap-4 items-start">
+                                                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 text-center min-w-[50px] border border-slate-200 dark:border-slate-700">
+                                                    <p className="text-xs font-bold text-primary uppercase">{month}</p>
+                                                    <p className="text-xl font-extrabold text-slate-900 dark:text-white -mt-1">{day.toString().padStart(2, '0')}</p>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{event.title}</h4>
+                                                    <p className="text-xs text-slate-500 mt-1 line-clamp-1">{event.location} • {event.time}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
                                 <button className="w-full text-center text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-white mt-2 transition-colors">View Calendar</button>
                             </div>
                         </div>
@@ -223,10 +304,53 @@ export default function MemberDashboard() {
 
                         {/* User Actions & Mobile Menu Toggle */}
                         <div className="flex items-center gap-3">
-                            <button className="relative p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors hidden sm:block bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-[20px]">notifications</span>
-                                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setIsNotifOpen(!isNotifOpen)}
+                                    className="relative p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors hidden sm:block bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">notifications</span>
+                                    {notifications.length > 0 && (
+                                        <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                                    )}
+                                </button>
+
+                                <AnimatePresence>
+                                    {isNotifOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 10 }}
+                                            className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 py-2 z-50 overflow-hidden"
+                                        >
+                                            <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                                                <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+                                                <span onClick={() => { setActiveTab('overview'); setIsNotifOpen(false); }} className="text-xs font-bold text-primary cursor-pointer hover:underline">View All</span>
+                                            </div>
+                                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                {notifications.length > 0 ? notifications.map(notif => (
+                                                    <div
+                                                        key={notif._id}
+                                                        onClick={() => { setActiveTab('overview'); setIsNotifOpen(false); }}
+                                                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-50 dark:border-slate-700/50 last:border-0 transition-colors"
+                                                    >
+                                                        <div className="flex justify-between items-start gap-2">
+                                                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 line-clamp-1">{notif.title}</p>
+                                                            <span className="shrink-0 text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">{new Date(notif.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{notif.content}</p>
+                                                    </div>
+                                                )) : (
+                                                    <div className="px-4 py-8 text-center flex flex-col items-center justify-center">
+                                                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2">notifications_off</span>
+                                                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No new notifications</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
                             <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
 

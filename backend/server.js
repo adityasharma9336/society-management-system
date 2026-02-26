@@ -14,7 +14,7 @@ const visitorRoutes = require('./routes/visitorRoutes');
 const noticeRoutes = require('./routes/noticeRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const billRoutes = require('./routes/billRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 dotenv.config();
 
@@ -28,6 +28,7 @@ const io = socketIo(server, {
         methods: ["GET", "POST"]
     }
 });
+app.set('socketio', io);
 
 // Middleware
 app.use(express.json());
@@ -42,11 +43,12 @@ app.use('/api/visitors', visitorRoutes);
 app.use('/api/notices', noticeRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bills', billRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/polls', require('./routes/pollRoutes'));
 app.use('/api/amenities', require('./routes/amenityRoutes'));
 app.use('/api/audit', require('./routes/auditRoutes'));
-app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
     res.send('API is running...');

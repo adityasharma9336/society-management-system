@@ -1,4 +1,6 @@
 const Complaint = require('../models/Complaint');
+const Notification = require('../models/Notification');
+const AuditLog = require('../models/AuditLog');
 
 // @desc    Create a new complaint
 // @route   POST /api/complaints
@@ -14,7 +16,7 @@ const createComplaint = async (req, res) => {
             category,
             priority: priority || 'Medium',
             timeline: [{
-                status: 'Open',
+                status: 'open',
                 date: Date.now(),
                 note: 'Complaint Logged'
             }]
@@ -34,6 +36,22 @@ const getComplaints = async (req, res) => {
     try {
         const complaints = await Complaint.find({}).populate('user', 'id name block flatNo').sort('-createdAt');
         res.json(complaints);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get single complaint
+// @route   GET /api/complaints/:id
+// @access  Private
+const getComplaintById = async (req, res) => {
+    try {
+        const complaint = await Complaint.findById(req.params.id).populate('user', 'id name block flatNo');
+        if (complaint) {
+            res.json(complaint);
+        } else {
+            res.status(404).json({ message: 'Complaint not found' });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -70,7 +88,17 @@ const updateComplaintStatus = async (req, res) => {
             });
 
             const updatedComplaint = await complaint.save();
-            res.json(updatedComplaint);
+
+            // Log action
+            await AuditLog.create({
+                user: req.user._id,
+                action: 'COMPLAINT_STATUS_UPDATE',
+                details: `Status of "${complaint.subject}" updated to ${status}`,
+                resourceId: complaint._id
+            });
+
+            const populated = await updatedComplaint.populate('user', 'id name block flatNo');
+            res.json(populated);
         } else {
             res.status(404).json({ message: 'Complaint not found' });
         }
@@ -97,7 +125,17 @@ const addMessage = async (req, res) => {
             });
 
             const updatedComplaint = await complaint.save();
-            res.json(updatedComplaint);
+
+            // Log action
+            await AuditLog.create({
+                user: req.user._id,
+                action: 'COMPLAINT_MESSAGE_ADDED',
+                details: `Message added to complaint: "${complaint.subject}"`,
+                resourceId: complaint._id
+            });
+
+            const populated = await updatedComplaint.populate('user', 'id name block flatNo');
+            res.json(populated);
         } else {
             res.status(404).json({ message: 'Complaint not found' });
         }
@@ -116,7 +154,30 @@ const getComplaintStats = async (req, res) => {
         const inProgress = await Complaint.countDocuments({ status: 'in_progress' });
         const resolved = await Complaint.countDocuments({ status: 'resolved' });
 
-        res.json({ total, open, inProgress, resolved });
+        const activeCount = open + inProgress;
+
+        // Monthly Stats
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const resolvedThisMonth = await Complaint.countDocuments({
+            status: 'resolved',
+            updatedAt: { $gte: startOfMonth }
+        });
+
+        // Average Resolution Time (for resolved complaints)
+        const resolvedComplaints = await Complaint.find({ status: 'resolved' });
+        let avgResolutionTime = 0;
+        if (resolvedComplaints.length > 0) {
+            const totalTime = resolvedComplaints.reduce((acc, c) => {
+                return acc + (new Date(c.updatedAt) - new Date(c.createdAt));
+            }, 0);
+            // Convert to days
+            avgResolutionTime = (totalTime / resolvedComplaints.length / (1000 * 60 * 60 * 24)).toFixed(1);
+        }
+
+        res.json({ total, open, inProgress, resolved, activeCount, resolvedThisMonth, avgResolutionTime });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -125,6 +186,7 @@ const getComplaintStats = async (req, res) => {
 module.exports = {
     createComplaint,
     getComplaints,
+    getComplaintById,
     getMyComplaints,
     updateComplaintStatus,
     addMessage,

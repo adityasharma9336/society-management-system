@@ -13,7 +13,7 @@ const billSchema = mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['maintenance', 'electricity', 'water', 'other'],
+            enum: ['maintenance', 'electricity', 'water', 'utility', 'penalty', 'other'],
             default: 'maintenance'
         },
         dueDate: {

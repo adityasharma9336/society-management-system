@@ -17,8 +17,8 @@ const complaintSchema = mongoose.Schema(
         },
         category: {
             type: String,
-            enum: ['plumbing', 'electrical', 'security', 'other'],
-            default: 'other',
+            enum: ['Plumbing', 'Electrical', 'Carpentry', 'Security', 'Cleaning', 'Noise', 'Maintenance', 'Other'],
+            default: 'Other',
         },
         status: {
             type: String,
@@ -27,7 +27,7 @@ const complaintSchema = mongoose.Schema(
         },
         priority: {
             type: String,
-            enum: ['Low', 'Medium', 'High'],
+            enum: ['Low', 'Medium', 'High', 'Urgent'],
             default: 'Medium',
         },
         assignedTo: {
